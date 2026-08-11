@@ -87,7 +87,10 @@ export function Dashboard({ user }: { user: User }) {
       .insert({ user_id: user.id, title: title.trim() })
       .select("id, title, description, created_at")
       .single();
-    if (error || !data) return toast.error(error?.message ?? "Could not create phase");
+    if (error || !data) {
+      toast.error(error?.message ?? "Could not create phase");
+      return;
+    }
     setPhases((prev) => [...prev, data]);
     setActiveId(data.id);
     setDrawerOpen(false);
@@ -118,7 +121,10 @@ export function Dashboard({ user }: { user: User }) {
       .insert({ user_id: user.id, phase_id: activeId, title })
       .select("id, phase_id, title, is_completed, proof_image_url, created_at")
       .single();
-    if (error || !data) return toast.error(error?.message ?? "Could not add task");
+    if (error || !data) {
+      toast.error(error?.message ?? "Could not add task");
+      return;
+    }
     setTasks((prev) => [...prev, data]);
   }
 
@@ -179,7 +185,10 @@ export function Dashboard({ user }: { user: User }) {
     const { data, error } = await supabase.storage
       .from("task_proofs")
       .createSignedUrl(task.proof_image_url, 300);
-    if (error || !data) return toast.error(error?.message ?? "Could not open image");
+    if (error || !data) {
+      toast.error(error?.message ?? "Could not open image");
+      return;
+    }
     setViewer({ url: data.signedUrl, title: task.title });
   }
 
