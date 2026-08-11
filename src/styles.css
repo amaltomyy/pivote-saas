@@ -19,6 +19,11 @@
  */
 
 @theme inline {
+  --color-glass: var(--glass-bg);
+  --color-glass-border: var(--glass-border);
+  --color-violet: #3a1078;
+  --color-emerald: #0b6640;
+
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
