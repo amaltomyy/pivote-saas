@@ -14,7 +14,92 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      pivote_phases: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          title: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          title: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          title?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      pivote_tasks: {
+        Row: {
+          created_at: string
+          id: string
+          is_completed: boolean
+          phase_id: string
+          proof_image_url: string | null
+          title: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_completed?: boolean
+          phase_id: string
+          proof_image_url?: string | null
+          title: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_completed?: boolean
+          phase_id?: string
+          proof_image_url?: string | null
+          title?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pivote_tasks_phase_id_fkey"
+            columns: ["phase_id"]
+            isOneToOne: false
+            referencedRelation: "pivote_phases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pivote_usage_logs: {
+        Row: {
+          id: string
+          last_active: string
+          minutes_spent: number
+          session_date: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          last_active?: string
+          minutes_spent?: number
+          session_date?: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          last_active?: string
+          minutes_spent?: number
+          session_date?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
