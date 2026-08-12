@@ -48,7 +48,7 @@ function Index() {
   if (!ready) {
     return (
       <div className="grid min-h-screen place-items-center bg-background">
-        <Loader2 className="h-6 w-6 animate-spin text-violet" />
+        <Loader2 className="h-6 w-6 animate-spin text-teal" />
       </div>
     );
   }
