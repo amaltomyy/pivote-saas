@@ -41,7 +41,7 @@ export function AuthView() {
         className="pointer-events-none fixed inset-0 overflow-hidden"
         style={{
           background:
-            "radial-gradient(60rem 40rem at 15% 0%, rgba(58,16,120,0.18), transparent 60%), radial-gradient(50rem 35rem at 90% 100%, rgba(11,102,64,0.16), transparent 60%)",
+            "radial-gradient(60rem 40rem at 15% 0%, rgba(0,78,100,0.14), transparent 60%), radial-gradient(50rem 35rem at 90% 100%, rgba(59,145,168,0.12), transparent 60%)",
         }}
       />
       <header className="relative z-10 flex items-center justify-between px-4 py-4 sm:px-8">
