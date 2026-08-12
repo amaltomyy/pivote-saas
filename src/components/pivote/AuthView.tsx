@@ -11,28 +11,58 @@ export function AuthView() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
+  function friendly(message: string) {
+    const m = message.toLowerCase();
+    if (m.includes("invalid login")) return "Wrong email or password. Please try again.";
+    if (m.includes("already registered") || m.includes("already been registered"))
+      return "That email already has an account — sign in instead.";
+    if (m.includes("password")) return "Password must be at least 6 characters.";
+    if (m.includes("email") && m.includes("confirm"))
+      return "Please confirm your email, then sign in.";
+    if (m.includes("rate limit") || m.includes("too many"))
+      return "Too many attempts. Please wait a moment and try again.";
+    return message;
+  }
+
   async function submit(e: React.FormEvent) {
     e.preventDefault();
+    if (loading) return;
     setLoading(true);
     try {
       if (mode === "signup") {
         const { data, error } = await supabase.auth.signUp({
-          email,
+          email: email.trim(),
           password,
           options: { emailRedirectTo: window.location.origin },
         });
         if (error) throw error;
-        if (!data.session) toast.success("Check your email to confirm your account.");
+        if (!data.session) {
+          // Try an immediate sign-in (works when email confirmation is disabled).
+          const { error: signInErr } = await supabase.auth.signInWithPassword({
+            email: email.trim(),
+            password,
+          });
+          if (signInErr) {
+            toast.success("Account created. Check your email to confirm, then sign in.");
+            setMode("signin");
+          }
+        } else {
+          toast.success("Welcome to Pivot'e!");
+        }
       } else {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        const { error } = await supabase.auth.signInWithPassword({
+          email: email.trim(),
+          password,
+        });
         if (error) throw error;
       }
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Something went wrong");
+      toast.error(friendly(err instanceof Error ? err.message : "Something went wrong"));
     } finally {
       setLoading(false);
     }
   }
+
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
