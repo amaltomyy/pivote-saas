@@ -1,4 +1,4 @@
-**Pivot'e — Full-Stack Goal Execution SaaS**
+## Pivot'e — Full-Stack Goal Execution SaaS
 
 Pivot'e is a responsive, production-ready goal execution web application engineered for focused productivity. It features a custom glassmorphic UI design system, secure user authentication, real-time database management, background focus tracking, and cloud image storage for "Proof-of-Work" validation.
 
