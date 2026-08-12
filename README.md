@@ -1,4 +1,4 @@
-# Pivot'e — Full-Stack Goal Execution SaaS
+<img width="1835" height="991" alt="image" src="https://github.com/user-attachments/assets/8f2408cf-7ec3-4874-bb65-f93d76564c5b" /># Pivot'e — Full-Stack Goal Execution SaaS
 
 Pivot'e is a responsive, production-ready goal execution web application engineered for focused productivity. It features a custom glassmorphic UI design system, secure user authentication, real-time database management, background focus tracking, and cloud image storage for "Proof-of-Work" validation.
 
@@ -81,7 +81,8 @@ By leveraging advanced prompt engineering and architectural analysis, I focused 
 
 ## 🚀 Live Demo & Repository Links
 
-* **Live Application:** 
+* **Live Application:** [https://pivote-saas.vercel.app](https://pivote-saas.vercel.app)
+
 * **GitHub Repository:** [https://github.com/amaltomyy/pivote-saas](https://www.google.com/search?q=https://github.com/amaltomyy/pivote-saas)
 
 ---
