@@ -211,7 +211,7 @@ export function Dashboard({ user }: { user: User }) {
               <div
                 className={`group flex items-center gap-2 rounded-xl border px-3 py-2.5 transition ${
                   active
-                    ? "border-transparent bg-violet text-white"
+                    ? "border-transparent bg-teal text-white"
                     : "border-glass-border bg-glass text-foreground hover:bg-accent"
                 }`}
               >
@@ -246,7 +246,7 @@ export function Dashboard({ user }: { user: User }) {
       <button
         type="button"
         onClick={addPhase}
-        className="mt-4 flex w-full shrink-0 items-center justify-center gap-2 rounded-xl bg-violet px-4 py-3 text-sm font-semibold text-white transition hover:opacity-90 active:scale-[0.99]"
+        className="mt-4 flex w-full shrink-0 items-center justify-center gap-2 rounded-xl bg-teal px-4 py-3 text-sm font-semibold text-white transition hover:opacity-90 active:scale-[0.99]"
       >
         <Plus className="h-4 w-4" /> Add New Phase
       </button>
@@ -292,11 +292,11 @@ export function Dashboard({ user }: { user: User }) {
         <div className="px-3 pb-3 sm:px-5">
           <div className="flex items-center justify-between pb-1.5 text-xs text-muted-foreground">
             <span>Global completion</span>
-            <span className="font-semibold text-emerald">{globalPct}%</span>
+            <span className="font-semibold text-teal">{globalPct}%</span>
           </div>
           <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
             <div
-              className="h-full rounded-full bg-emerald transition-all duration-500"
+              className="h-full rounded-full bg-teal transition-all duration-500"
               style={{ width: `${globalPct}%` }}
             />
           </div>
@@ -334,7 +334,7 @@ export function Dashboard({ user }: { user: User }) {
         <main className="min-w-0 flex-1">
           {loading ? (
             <div className="glass-card grid h-64 place-items-center p-6">
-              <Loader2 className="h-6 w-6 animate-spin text-violet" />
+              <Loader2 className="h-6 w-6 animate-spin text-teal" />
             </div>
           ) : !activePhase ? (
             <div className="glass-card p-8 text-center sm:p-12">
@@ -348,7 +348,7 @@ export function Dashboard({ user }: { user: User }) {
               <button
                 type="button"
                 onClick={addPhase}
-                className="mt-6 inline-flex items-center gap-2 rounded-xl bg-violet px-5 py-3 text-sm font-semibold text-white transition hover:opacity-90"
+                className="mt-6 inline-flex items-center gap-2 rounded-xl bg-teal px-5 py-3 text-sm font-semibold text-white transition hover:opacity-90"
               >
                 <Plus className="h-4 w-4" /> Add New Phase
               </button>
@@ -404,7 +404,7 @@ export function Dashboard({ user }: { user: User }) {
                       onClick={() => toggleTask(task)}
                       className={`grid h-6 w-6 shrink-0 place-items-center rounded-full border-2 transition-all active:scale-90 ${
                         task.is_completed
-                          ? "border-emerald bg-emerald"
+                          ? "border-teal bg-teal"
                           : "border-muted-foreground/50 bg-transparent"
                       }`}
                     >
@@ -425,7 +425,7 @@ export function Dashboard({ user }: { user: User }) {
                       <button
                         type="button"
                         onClick={() => openProof(task)}
-                        className="shrink-0 rounded-lg bg-emerald/15 px-2 py-1 text-[11px] font-semibold text-emerald"
+                        className="shrink-0 rounded-lg bg-teal/15 px-2 py-1 text-[11px] font-semibold text-teal"
                       >
                         Proof
                       </button>
@@ -448,7 +448,7 @@ export function Dashboard({ user }: { user: User }) {
                       type="button"
                       aria-label="Upload proof image"
                       onClick={() => fileInputs.current[task.id]?.click()}
-                      className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-glass-border text-muted-foreground transition hover:text-violet"
+                      className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-glass-border text-muted-foreground transition hover:text-teal"
                     >
                       {uploadingId === task.id ? (
                         <Loader2 className="h-4 w-4 animate-spin" />
@@ -473,11 +473,11 @@ export function Dashboard({ user }: { user: User }) {
                   value={newTask}
                   onChange={(e) => setNewTask(e.target.value)}
                   placeholder="Add a task…"
-                  className="min-w-0 flex-1 rounded-xl border border-glass-border bg-background/60 px-4 py-3 text-base text-foreground outline-none focus:border-violet focus:ring-2 focus:ring-violet/30"
+                  className="min-w-0 flex-1 rounded-xl border border-glass-border bg-background/60 px-4 py-3 text-base text-foreground outline-none focus:border-teal focus:ring-2 focus:ring-teal/30"
                 />
                 <button
                   type="submit"
-                  className="shrink-0 rounded-xl bg-violet px-4 py-3 text-sm font-semibold text-white transition hover:opacity-90 active:scale-[0.99]"
+                  className="shrink-0 rounded-xl bg-teal px-4 py-3 text-sm font-semibold text-white transition hover:opacity-90 active:scale-[0.99]"
                 >
                   <Plus className="h-5 w-5" />
                 </button>

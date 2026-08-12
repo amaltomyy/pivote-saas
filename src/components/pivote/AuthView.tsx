@@ -54,7 +54,7 @@ export function AuthView() {
           <h1 className="text-4xl font-black leading-tight tracking-tight text-foreground sm:text-5xl">
             Calm execution.
             <br />
-            <span className="text-violet">Visible proof</span> of work.
+            <span className="text-teal">Visible proof</span> of work.
           </h1>
           <p className="mt-5 max-w-md text-base text-muted-foreground">
             Pivot&apos;e turns your ambitions into focused phases. Track tasks, attach
@@ -67,7 +67,7 @@ export function AuthView() {
               "Automatic focus-time logging while you work",
             ].map((t) => (
               <li key={t} className="flex items-start gap-3">
-                <span className="mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full bg-emerald" />
+                <span className="mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full bg-teal" />
                 <span className="min-w-0">{t}</span>
               </li>
             ))}
@@ -95,7 +95,7 @@ export function AuthView() {
                 autoComplete="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="mt-1.5 w-full rounded-xl border border-glass-border bg-background/60 px-4 py-3 text-base text-foreground outline-none transition focus:border-violet focus:ring-2 focus:ring-violet/30"
+                className="mt-1.5 w-full rounded-xl border border-glass-border bg-background/60 px-4 py-3 text-base text-foreground outline-none transition focus:border-teal focus:ring-2 focus:ring-teal/30"
                 placeholder="you@example.com"
               />
             </div>
@@ -111,14 +111,14 @@ export function AuthView() {
                 autoComplete={mode === "signin" ? "current-password" : "new-password"}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="mt-1.5 w-full rounded-xl border border-glass-border bg-background/60 px-4 py-3 text-base text-foreground outline-none transition focus:border-violet focus:ring-2 focus:ring-violet/30"
+                className="mt-1.5 w-full rounded-xl border border-glass-border bg-background/60 px-4 py-3 text-base text-foreground outline-none transition focus:border-teal focus:ring-2 focus:ring-teal/30"
                 placeholder="••••••••"
               />
             </div>
             <button
               type="submit"
               disabled={loading}
-              className="flex w-full items-center justify-center gap-2 rounded-xl bg-violet px-4 py-3 text-base font-semibold text-white transition hover:opacity-90 active:scale-[0.99] disabled:opacity-60"
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-teal px-4 py-3 text-base font-semibold text-white transition hover:opacity-90 active:scale-[0.99] disabled:opacity-60"
             >
               {loading && <Loader2 className="h-4 w-4 animate-spin" />}
               {mode === "signin" ? "Sign in" : "Sign up"}
