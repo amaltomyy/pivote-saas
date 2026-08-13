@@ -1,10 +1,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { User } from "@supabase/supabase-js";
+import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
+import { verifyTaskImage } from "@/lib/verify-task.functions";
 import { Logo, Footer } from "./Logo";
 import { ThemeToggle } from "./ThemeToggle";
 import { useUsageTracking } from "./useUsageTracking";
 import { toast } from "sonner";
+
 import {
   Area,
   AreaChart,
@@ -54,6 +57,19 @@ type UsageLog = { session_date: string; minutes_spent: number | null };
 
 const DAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
+function fileToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = String(reader.result);
+      resolve(result.slice(result.indexOf(",") + 1));
+    };
+    reader.onerror = () => reject(new Error("Could not read the selected image"));
+    reader.readAsDataURL(file);
+  });
+}
+
+
 export function Dashboard({ user }: { user: User }) {
   const [phases, setPhases] = useState<Phase[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -65,9 +81,17 @@ export function Dashboard({ user }: { user: User }) {
   const [viewer, setViewer] = useState<{ url: string; title: string } | null>(null);
   const [uploadingId, setUploadingId] = useState<string | null>(null);
   const [thumbs, setThumbs] = useState<Record<string, string>>({});
+  const [proofTask, setProofTask] = useState<Task | null>(null);
+  const [proofFile, setProofFile] = useState<File | null>(null);
+  const [proofPreview, setProofPreview] = useState<string | null>(null);
+  const [proofError, setProofError] = useState<string | null>(null);
+  const [verifying, setVerifying] = useState(false);
   const fileInputs = useRef<Record<string, HTMLInputElement | null>>({});
+  const proofInput = useRef<HTMLInputElement | null>(null);
+  const verifyProof = useServerFn(verifyTaskImage);
 
   useUsageTracking(user.id);
+
 
   const loadAll = useCallback(async () => {
     const [{ data: p, error: pe }, { data: t, error: te }, { data: u }] =
@@ -225,21 +249,80 @@ export function Dashboard({ user }: { user: User }) {
   }
 
   async function toggleTask(task: Task) {
-    const next = !task.is_completed;
+    if (!task.is_completed) {
+      // Completion requires AI-verified proof of work.
+      setProofTask(task);
+      setProofFile(null);
+      setProofPreview(null);
+      setProofError(null);
+      return;
+    }
     setTasks((prev) =>
-      prev.map((t) => (t.id === task.id ? { ...t, is_completed: next } : t)),
+      prev.map((t) => (t.id === task.id ? { ...t, is_completed: false } : t)),
     );
     const { error } = await supabase
       .from("pivote_tasks")
-      .update({ is_completed: next })
+      .update({ is_completed: false })
       .eq("id", task.id);
     if (error) {
       setTasks((prev) =>
-        prev.map((t) => (t.id === task.id ? { ...t, is_completed: !next } : t)),
+        prev.map((t) => (t.id === task.id ? { ...t, is_completed: true } : t)),
       );
       toast.error(error.message);
     }
   }
+
+  async function submitProof() {
+    const task = proofTask;
+    const file = proofFile;
+    if (!task || !file) return;
+    setVerifying(true);
+    setProofError(null);
+    try {
+      const base64 = await fileToBase64(file);
+      const result = await verifyProof({
+        data: {
+          taskTitle: task.title,
+          imageBase64: base64,
+          mimeType: file.type || "image/jpeg",
+        },
+      });
+      if (!result.verified) {
+        setProofError(result.reason);
+        toast.error("Proof rejected by AI verification");
+        return;
+      }
+
+      const ext = file.name.split(".").pop() ?? "jpg";
+      const path = `${user.id}/${task.id}-${Date.now()}.${ext}`;
+      const { error: upErr } = await supabase.storage
+        .from("task_proofs")
+        .upload(path, file, { upsert: true, contentType: file.type });
+      if (upErr) throw upErr;
+      const { error } = await supabase
+        .from("pivote_tasks")
+        .update({ is_completed: true, proof_image_url: path })
+        .eq("id", task.id);
+      if (error) throw error;
+
+      setTasks((prev) =>
+        prev.map((t) =>
+          t.id === task.id ? { ...t, is_completed: true, proof_image_url: path } : t,
+        ),
+      );
+      toast.success(`Verified — ${result.reason}`);
+      setProofTask(null);
+      setProofFile(null);
+      setProofPreview(null);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Verification failed";
+      setProofError(message);
+      toast.error(message);
+    } finally {
+      setVerifying(false);
+    }
+  }
+
 
   async function deleteTask(id: string) {
     const prev = tasks;
@@ -809,7 +892,106 @@ export function Dashboard({ user }: { user: User }) {
         </div>
       </div>
 
+      {proofTask && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <button
+            aria-label="Close proof modal"
+            className="absolute inset-0 bg-black/60 backdrop-blur-md"
+            onClick={() => {
+              if (!verifying) setProofTask(null);
+            }}
+          />
+          <div className="panel-card relative z-10 w-full max-w-md overflow-hidden p-5">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-base font-black text-foreground">
+                  Upload Proof of Work
+                </p>
+                <p className="mt-1 truncate text-xs text-muted-foreground">
+                  {proofTask.title}
+                </p>
+              </div>
+              <button
+                type="button"
+                aria-label="Close"
+                disabled={verifying}
+                onClick={() => setProofTask(null)}
+                className="shrink-0 rounded-full p-1.5 text-muted-foreground hover:text-foreground disabled:opacity-50"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <input
+              ref={proofInput}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                e.target.value = "";
+                if (!file) return;
+                setProofFile(file);
+                setProofError(null);
+                setProofPreview(URL.createObjectURL(file));
+              }}
+            />
+
+            <button
+              type="button"
+              onClick={() => proofInput.current?.click()}
+              className="mt-4 grid w-full place-items-center gap-2 rounded-2xl border-2 border-dashed border-glass-border p-6 text-sm text-muted-foreground transition hover:border-teal hover:text-teal"
+            >
+              {proofPreview ? (
+                <img
+                  src={proofPreview}
+                  alt={`Selected proof for ${proofTask.title}`}
+                  className="max-h-52 w-full rounded-xl object-contain"
+                />
+              ) : (
+                <>
+                  <Camera className="h-6 w-6" />
+                  <span>Tap to take a photo or choose an image</span>
+                </>
+              )}
+            </button>
+
+            {proofError && (
+              <div
+                role="alert"
+                className="mt-3 rounded-xl border border-destructive/40 bg-destructive/10 p-3 text-xs text-destructive"
+              >
+                <span className="font-semibold">AI verification failed: </span>
+                {proofError}
+              </div>
+            )}
+
+            <p className="mt-3 text-[11px] text-muted-foreground">
+              AI reviews your image before this task can be marked complete.
+            </p>
+
+            <button
+              type="button"
+              disabled={!proofFile || verifying}
+              onClick={() => void submitProof()}
+              className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl bg-teal px-4 py-3 text-sm font-bold text-white transition hover:opacity-90 active:scale-[0.99] disabled:opacity-50"
+            >
+              {verifying ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" /> Verifying with AI…
+                </>
+              ) : (
+                <>
+                  <Check className="h-4 w-4" /> Verify &amp; Complete
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+      )}
+
       {viewer && (
+
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <button
             aria-label="Close image"
