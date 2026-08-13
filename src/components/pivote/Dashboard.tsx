@@ -225,21 +225,80 @@ export function Dashboard({ user }: { user: User }) {
   }
 
   async function toggleTask(task: Task) {
-    const next = !task.is_completed;
+    if (!task.is_completed) {
+      // Completion requires AI-verified proof of work.
+      setProofTask(task);
+      setProofFile(null);
+      setProofPreview(null);
+      setProofError(null);
+      return;
+    }
     setTasks((prev) =>
-      prev.map((t) => (t.id === task.id ? { ...t, is_completed: next } : t)),
+      prev.map((t) => (t.id === task.id ? { ...t, is_completed: false } : t)),
     );
     const { error } = await supabase
       .from("pivote_tasks")
-      .update({ is_completed: next })
+      .update({ is_completed: false })
       .eq("id", task.id);
     if (error) {
       setTasks((prev) =>
-        prev.map((t) => (t.id === task.id ? { ...t, is_completed: !next } : t)),
+        prev.map((t) => (t.id === task.id ? { ...t, is_completed: true } : t)),
       );
       toast.error(error.message);
     }
   }
+
+  async function submitProof() {
+    const task = proofTask;
+    const file = proofFile;
+    if (!task || !file) return;
+    setVerifying(true);
+    setProofError(null);
+    try {
+      const base64 = await fileToBase64(file);
+      const result = await verifyProof({
+        data: {
+          taskTitle: task.title,
+          imageBase64: base64,
+          mimeType: file.type || "image/jpeg",
+        },
+      });
+      if (!result.verified) {
+        setProofError(result.reason);
+        toast.error("Proof rejected by AI verification");
+        return;
+      }
+
+      const ext = file.name.split(".").pop() ?? "jpg";
+      const path = `${user.id}/${task.id}-${Date.now()}.${ext}`;
+      const { error: upErr } = await supabase.storage
+        .from("task_proofs")
+        .upload(path, file, { upsert: true, contentType: file.type });
+      if (upErr) throw upErr;
+      const { error } = await supabase
+        .from("pivote_tasks")
+        .update({ is_completed: true, proof_image_url: path })
+        .eq("id", task.id);
+      if (error) throw error;
+
+      setTasks((prev) =>
+        prev.map((t) =>
+          t.id === task.id ? { ...t, is_completed: true, proof_image_url: path } : t,
+        ),
+      );
+      toast.success(`Verified — ${result.reason}`);
+      setProofTask(null);
+      setProofFile(null);
+      setProofPreview(null);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Verification failed";
+      setProofError(message);
+      toast.error(message);
+    } finally {
+      setVerifying(false);
+    }
+  }
+
 
   async function deleteTask(id: string) {
     const prev = tasks;
