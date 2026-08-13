@@ -65,9 +65,17 @@ export function Dashboard({ user }: { user: User }) {
   const [viewer, setViewer] = useState<{ url: string; title: string } | null>(null);
   const [uploadingId, setUploadingId] = useState<string | null>(null);
   const [thumbs, setThumbs] = useState<Record<string, string>>({});
+  const [proofTask, setProofTask] = useState<Task | null>(null);
+  const [proofFile, setProofFile] = useState<File | null>(null);
+  const [proofPreview, setProofPreview] = useState<string | null>(null);
+  const [proofError, setProofError] = useState<string | null>(null);
+  const [verifying, setVerifying] = useState(false);
   const fileInputs = useRef<Record<string, HTMLInputElement | null>>({});
+  const proofInput = useRef<HTMLInputElement | null>(null);
+  const verifyProof = useServerFn(verifyTaskImage);
 
   useUsageTracking(user.id);
+
 
   const loadAll = useCallback(async () => {
     const [{ data: p, error: pe }, { data: t, error: te }, { data: u }] =
