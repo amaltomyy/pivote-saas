@@ -892,7 +892,106 @@ export function Dashboard({ user }: { user: User }) {
         </div>
       </div>
 
+      {proofTask && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <button
+            aria-label="Close proof modal"
+            className="absolute inset-0 bg-black/60 backdrop-blur-md"
+            onClick={() => {
+              if (!verifying) setProofTask(null);
+            }}
+          />
+          <div className="panel-card relative z-10 w-full max-w-md overflow-hidden p-5">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-base font-black text-foreground">
+                  Upload Proof of Work
+                </p>
+                <p className="mt-1 truncate text-xs text-muted-foreground">
+                  {proofTask.title}
+                </p>
+              </div>
+              <button
+                type="button"
+                aria-label="Close"
+                disabled={verifying}
+                onClick={() => setProofTask(null)}
+                className="shrink-0 rounded-full p-1.5 text-muted-foreground hover:text-foreground disabled:opacity-50"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <input
+              ref={proofInput}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                e.target.value = "";
+                if (!file) return;
+                setProofFile(file);
+                setProofError(null);
+                setProofPreview(URL.createObjectURL(file));
+              }}
+            />
+
+            <button
+              type="button"
+              onClick={() => proofInput.current?.click()}
+              className="mt-4 grid w-full place-items-center gap-2 rounded-2xl border-2 border-dashed border-glass-border p-6 text-sm text-muted-foreground transition hover:border-teal hover:text-teal"
+            >
+              {proofPreview ? (
+                <img
+                  src={proofPreview}
+                  alt={`Selected proof for ${proofTask.title}`}
+                  className="max-h-52 w-full rounded-xl object-contain"
+                />
+              ) : (
+                <>
+                  <Camera className="h-6 w-6" />
+                  <span>Tap to take a photo or choose an image</span>
+                </>
+              )}
+            </button>
+
+            {proofError && (
+              <div
+                role="alert"
+                className="mt-3 rounded-xl border border-destructive/40 bg-destructive/10 p-3 text-xs text-destructive"
+              >
+                <span className="font-semibold">AI verification failed: </span>
+                {proofError}
+              </div>
+            )}
+
+            <p className="mt-3 text-[11px] text-muted-foreground">
+              AI reviews your image before this task can be marked complete.
+            </p>
+
+            <button
+              type="button"
+              disabled={!proofFile || verifying}
+              onClick={() => void submitProof()}
+              className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl bg-teal px-4 py-3 text-sm font-bold text-white transition hover:opacity-90 active:scale-[0.99] disabled:opacity-50"
+            >
+              {verifying ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" /> Verifying with AI…
+                </>
+              ) : (
+                <>
+                  <Check className="h-4 w-4" /> Verify &amp; Complete
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+      )}
+
       {viewer && (
+
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <button
             aria-label="Close image"
