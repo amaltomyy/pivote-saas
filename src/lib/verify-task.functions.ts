@@ -49,13 +49,15 @@ export const verifyTaskImage = createServerFn({ method: "POST" })
   .handler(async ({ data }): Promise<VerifyResult> => {
     const apiKey = process.env["GEMINI_API_KEY"];
     if (!apiKey) {
+      console.error("[verify-task-image] GEMINI_API_KEY is not configured");
       return { verified: false, reason: "AI verification is not configured." };
     }
 
+    const modelName = "gemini-1.5-flash";
     const prompt = `Task Title: ${data.taskTitle}. Analyze this image. Does this photo show reasonable visual proof that this specific task was completed? Answer strictly in JSON format: { "verified": boolean, "reason": "short explanation" }`;
 
     const res = await fetch(
-      "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent",
+      `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent`,
       {
         method: "POST",
         headers: {
@@ -79,7 +81,11 @@ export const verifyTaskImage = createServerFn({ method: "POST" })
 
     if (!res.ok) {
       const detail = await res.text().catch(() => "");
-      console.error("[verify-task-image] Gemini error", res.status, detail);
+      console.error(`[verify-task-image] Gemini API error [${modelName}]`, {
+        status: res.status,
+        statusText: res.statusText,
+        body: detail,
+      });
       return {
         verified: false,
         reason:
@@ -90,11 +96,49 @@ export const verifyTaskImage = createServerFn({ method: "POST" })
     }
 
     const json = (await res.json()) as {
-      candidates?: { content?: { parts?: { text?: string }[] } }[];
+      error?: { message?: string; code?: number };
+      candidates?: {
+        finishReason?: string;
+        safetyRatings?: unknown[];
+        content?: { parts?: { text?: string }[] };
+      }[];
     };
-    const text = json.candidates?.[0]?.content?.parts?.map((p) => p.text ?? "").join("") ?? "";
-    if (!text.trim()) {
+
+    if (json.error) {
+      console.error("[verify-task-image] Gemini response error", json.error);
+      return {
+        verified: false,
+        reason: json.error.message || "AI verification returned an error.",
+      };
+    }
+
+    const firstCandidate = json.candidates?.[0];
+    if (!firstCandidate) {
+      console.error("[verify-task-image] No candidates returned", json);
       return { verified: false, reason: "The AI could not analyse this image." };
     }
-    return parseJsonish(text);
+
+    if (firstCandidate.finishReason && firstCandidate.finishReason !== "STOP") {
+      console.error("[verify-task-image] Gemini finish reason", {
+        finishReason: firstCandidate.finishReason,
+        safetyRatings: firstCandidate.safetyRatings,
+      });
+      return {
+        verified: false,
+        reason: `AI verification blocked (${firstCandidate.finishReason}). Try a clearer photo.`,
+      };
+    }
+
+    const text = firstCandidate.content?.parts?.map((p) => p.text ?? "").join("") ?? "";
+    if (!text.trim()) {
+      console.error("[verify-task-image] Empty response text", json);
+      return { verified: false, reason: "The AI could not analyse this image." };
+    }
+
+    const result = parseJsonish(text);
+    console.log("[verify-task-image] Verification result", {
+      verified: result.verified,
+      reason: result.reason,
+    });
+    return result;
   });
