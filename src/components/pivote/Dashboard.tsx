@@ -1,10 +1,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { User } from "@supabase/supabase-js";
+import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
+import { verifyTaskImage } from "@/lib/verify-task.functions";
 import { Logo, Footer } from "./Logo";
 import { ThemeToggle } from "./ThemeToggle";
 import { useUsageTracking } from "./useUsageTracking";
 import { toast } from "sonner";
+
 import {
   Area,
   AreaChart,
