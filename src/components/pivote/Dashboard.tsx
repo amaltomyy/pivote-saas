@@ -651,7 +651,7 @@ export function Dashboard({ user }: { user: User }) {
                   {phaseTasks.map((task) => (
                     <li
                       key={task.id}
-                      className="soft-row grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-2 py-3 hover:bg-accent/40 sm:grid-cols-[minmax(0,1fr)_5rem_4.5rem_2rem]"
+                      className="soft-row grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-2 px-2 py-3 hover:bg-accent/40 sm:grid-cols-[minmax(0,1fr)_5rem_4.5rem_2rem] sm:gap-3"
                     >
                       <div className="flex min-w-0 items-center gap-3">
                         <button
