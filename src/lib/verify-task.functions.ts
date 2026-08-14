@@ -53,47 +53,56 @@ export const verifyTaskImage = createServerFn({ method: "POST" })
       return { verified: false, reason: "AI verification is not configured." };
     }
 
-    const modelName = "gemini-1.5-flash";
+    const models = ["gemini-3.7-flash", "gemini-2.5-flash", "gemini-1.5-flash"];
     const prompt = `Task Title: ${data.taskTitle}. Analyze this image. Does this photo show reasonable visual proof that this specific task was completed? Answer strictly in JSON format: { "verified": boolean, "reason": "short explanation" }`;
 
-    const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-goog-api-key": apiKey,
-        },
-        body: JSON.stringify({
-          contents: [
-            {
-              role: "user",
-              parts: [
-                { text: prompt },
-                { inlineData: { mimeType: data.mimeType, data: data.imageBase64 } },
-              ],
-            },
+    const body = JSON.stringify({
+      contents: [
+        {
+          role: "user",
+          parts: [
+            { text: prompt },
+            { inlineData: { mimeType: data.mimeType, data: data.imageBase64 } },
           ],
-          generationConfig: { responseMimeType: "application/json", temperature: 0 },
-        }),
-      },
-    );
+        },
+      ],
+      generationConfig: { responseMimeType: "application/json", temperature: 0 },
+    });
 
-    if (!res.ok) {
+    let res: Response | null = null;
+    for (const modelName of models) {
+      res = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-goog-api-key": apiKey,
+          },
+          body,
+        },
+      );
+      if (res.ok) break;
       const detail = await res.text().catch(() => "");
       console.error(`[verify-task-image] Gemini API error [${modelName}]`, {
         status: res.status,
         statusText: res.statusText,
         body: detail,
       });
+      // Only fall through to the next model when this one isn't available.
+      if (res.status !== 404 && res.status !== 400) break;
+    }
+
+    if (!res || !res.ok) {
       return {
         verified: false,
         reason:
-          res.status === 429
+          res?.status === 429
             ? "AI verification is rate limited. Try again in a moment."
             : "AI verification failed. Please try again.",
       };
     }
+
 
     const json = (await res.json()) as {
       error?: { message?: string; code?: number };
