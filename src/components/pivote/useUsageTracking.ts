@@ -1,9 +1,14 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
-/** Increments minutes_spent by 1 for every 60s of active window time. */
+/**
+ * Tracks active window time. Persists +1 minute to Supabase every 60s of
+ * active time and exposes a live, second-accurate counter for the UI so the
+ * "Time Spent Today" card updates without a refresh.
+ */
 export function useUsageTracking(userId: string | undefined) {
   const activeRef = useRef(true);
+  const [liveSeconds, setLiveSeconds] = useState(0);
 
   useEffect(() => {
     if (!userId) return;
@@ -16,6 +21,10 @@ export function useUsageTracking(userId: string | undefined) {
     document.addEventListener("visibilitychange", onVisibility);
     window.addEventListener("focus", onFocus);
     window.addEventListener("blur", onBlur);
+
+    const secondTick = window.setInterval(() => {
+      if (activeRef.current) setLiveSeconds((s) => s + 1);
+    }, 1000);
 
     const tick = async () => {
       if (!activeRef.current) return;
@@ -48,10 +57,15 @@ export function useUsageTracking(userId: string | undefined) {
     const interval = window.setInterval(tick, 60_000);
     return () => {
       window.clearInterval(interval);
-      window.clearInterval(interval);
+      window.clearInterval(secondTick);
       document.removeEventListener("visibilitychange", onVisibility);
       window.removeEventListener("focus", onFocus);
       window.removeEventListener("blur", onBlur);
     };
   }, [userId]);
+
+  return {
+    liveSeconds,
+    liveMinutes: Math.floor(liveSeconds / 60),
+  };
 }
