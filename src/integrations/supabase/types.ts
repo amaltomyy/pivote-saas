@@ -100,6 +100,33 @@ export type Database = {
         }
         Relationships: []
       }
+      profiles: {
+        Row: {
+          created_at: string
+          id: string
+          reminder_time: string | null
+          reminders_enabled: boolean
+          updated_at: string
+          user_timezone: string | null
+        }
+        Insert: {
+          created_at?: string
+          id: string
+          reminder_time?: string | null
+          reminders_enabled?: boolean
+          updated_at?: string
+          user_timezone?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          reminder_time?: string | null
+          reminders_enabled?: boolean
+          updated_at?: string
+          user_timezone?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
