@@ -6,6 +6,7 @@ import { verifyTaskImage } from "@/lib/verify-task.functions";
 import { Logo, Footer } from "./Logo";
 import { ThemeToggle } from "./ThemeToggle";
 import { useUsageTracking } from "./useUsageTracking";
+import { NotificationSettings } from "./NotificationSettings";
 import { toast } from "sonner";
 
 import {
@@ -90,7 +91,7 @@ export function Dashboard({ user }: { user: User }) {
   const proofInput = useRef<HTMLInputElement | null>(null);
   const verifyProof = useServerFn(verifyTaskImage);
 
-  useUsageTracking(user.id);
+  const { liveMinutes } = useUsageTracking(user.id);
 
 
   const loadAll = useCallback(async () => {
@@ -168,13 +169,16 @@ export function Dashboard({ user }: { user: User }) {
       const d = new Date();
       d.setDate(d.getDate() - i);
       const key = d.toISOString().slice(0, 10);
-      out.push({ day: DAY_LABELS[d.getDay()]!, minutes: usageByDate[key] ?? 0 });
+      out.push({
+        day: DAY_LABELS[d.getDay()]!,
+        minutes: (usageByDate[key] ?? 0) + (i === 0 ? liveMinutes : 0),
+      });
     }
     return out;
-  }, [usageByDate]);
+  }, [usageByDate, liveMinutes]);
 
   const todayKey = new Date().toISOString().slice(0, 10);
-  const todayMinutes = usageByDate[todayKey] ?? 0;
+  const todayMinutes = (usageByDate[todayKey] ?? 0) + liveMinutes;
   const yesterdayKey = (() => {
     const d = new Date();
     d.setDate(d.getDate() - 1);
@@ -188,11 +192,13 @@ export function Dashboard({ user }: { user: User }) {
       const d = new Date();
       d.setDate(d.getDate() - i);
       const key = d.toISOString().slice(0, 10);
-      if ((usageByDate[key] ?? 0) > 0) count++;
+      const minutes = (usageByDate[key] ?? 0) + (i === 0 ? liveMinutes : 0);
+      if (minutes > 0) count++;
       else if (i > 0) break;
+      else if (i === 0) continue;
     }
     return count;
-  }, [usageByDate]);
+  }, [usageByDate, liveMinutes]);
 
   const donutData = [
     { name: "Completed", value: completedCount },
@@ -385,9 +391,9 @@ export function Dashboard({ user }: { user: User }) {
       <button
         type="button"
         onClick={addPhase}
-        className="flex w-full shrink-0 items-center justify-center gap-2 rounded-2xl bg-teal px-4 py-3.5 text-sm font-semibold text-white shadow-lg shadow-teal/20 transition hover:opacity-90 active:scale-[0.99]"
+        className="flex w-full shrink-0 flex-col items-center justify-center gap-1 whitespace-normal rounded-2xl bg-teal px-4 py-3.5 text-center text-sm font-semibold text-white shadow-lg shadow-teal/20 transition hover:opacity-90 active:scale-[0.99] sm:flex-row sm:gap-2"
       >
-        <Plus className="h-4 w-4" /> New Phase
+        <Plus className="h-4 w-4 shrink-0" /> <span>Add New Phase</span>
       </button>
       <p className="px-1 pb-2 pt-5 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
         My phases
@@ -427,7 +433,7 @@ export function Dashboard({ user }: { user: User }) {
                   type="button"
                   aria-label={`Delete ${p.title}`}
                   onClick={() => deletePhase(p.id)}
-                  className="shrink-0 rounded-lg p-1 text-muted-foreground opacity-0 transition hover:text-destructive group-hover:opacity-100"
+                  className="shrink-0 rounded-lg p-2 text-muted-foreground transition hover:text-destructive"
                 >
                   <Trash2 className="h-4 w-4" />
                 </button>
@@ -501,6 +507,7 @@ export function Dashboard({ user }: { user: User }) {
           </div>
 
           <div className="flex shrink-0 items-center gap-2">
+            <NotificationSettings userId={user.id} />
             <ThemeToggle />
             <button
               type="button"
@@ -734,7 +741,7 @@ export function Dashboard({ user }: { user: User }) {
                         type="button"
                         aria-label="Delete task"
                         onClick={() => deleteTask(task.id)}
-                        className="hidden shrink-0 rounded-lg p-1.5 text-muted-foreground transition hover:text-destructive sm:block"
+                        className="shrink-0 justify-self-end rounded-lg p-2 text-muted-foreground transition hover:text-destructive"
                       >
                         <Trash2 className="h-4 w-4" />
                       </button>
