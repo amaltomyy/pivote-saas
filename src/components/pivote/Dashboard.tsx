@@ -113,7 +113,7 @@ export function Dashboard({ user }: { user: User }) {
           .order("created_at", { ascending: true }),
         supabase
           .from("pivote_tasks")
-          .select("id, phase_id, title, is_completed, proof_image_url, created_at")
+          .select("id, phase_id, title, is_completed, proof_image_url, created_at, completed_at")
           .order("created_at", { ascending: true }),
         supabase
           .from("pivote_usage_logs")
@@ -255,7 +255,7 @@ export function Dashboard({ user }: { user: User }) {
     const { data, error } = await supabase
       .from("pivote_tasks")
       .insert({ user_id: user.id, phase_id: activeId, title })
-      .select("id, phase_id, title, is_completed, proof_image_url, created_at")
+      .select("id, phase_id, title, is_completed, proof_image_url, created_at, completed_at")
       .single();
     if (error || !data) {
       toast.error(error?.message ?? "Could not add task");
