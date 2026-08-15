@@ -40,6 +40,7 @@ export type Database = {
       }
       pivote_tasks: {
         Row: {
+          completed_at: string | null
           created_at: string
           id: string
           is_completed: boolean
@@ -49,6 +50,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          completed_at?: string | null
           created_at?: string
           id?: string
           is_completed?: boolean
@@ -58,6 +60,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          completed_at?: string | null
           created_at?: string
           id?: string
           is_completed?: boolean
@@ -106,6 +109,8 @@ export type Database = {
           id: string
           reminder_time: string | null
           reminders_enabled: boolean
+          streak_shields: number
+          total_focus_minutes: number
           updated_at: string
           user_timezone: string | null
         }
@@ -114,6 +119,8 @@ export type Database = {
           id: string
           reminder_time?: string | null
           reminders_enabled?: boolean
+          streak_shields?: number
+          total_focus_minutes?: number
           updated_at?: string
           user_timezone?: string | null
         }
@@ -122,6 +129,8 @@ export type Database = {
           id?: string
           reminder_time?: string | null
           reminders_enabled?: boolean
+          streak_shields?: number
+          total_focus_minutes?: number
           updated_at?: string
           user_timezone?: string | null
         }
