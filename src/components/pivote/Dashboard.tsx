@@ -97,11 +97,18 @@ export function Dashboard({ user }: { user: User }) {
   const [proofPreview, setProofPreview] = useState<string | null>(null);
   const [proofError, setProofError] = useState<string | null>(null);
   const [verifying, setVerifying] = useState(false);
+  const [galleryOpen, setGalleryOpen] = useState(false);
+  const [breaking, setBreaking] = useState(false);
+  const [focusTaskId, setFocusTaskId] = useState<string | null>(null);
+  const [focusMinutes, setFocusMinutes] = useState(0);
+  const [shields, setShields] = useState(0);
   const fileInputs = useRef<Record<string, HTMLInputElement | null>>({});
   const proofInput = useRef<HTMLInputElement | null>(null);
   const verifyProof = useServerFn(verifyTaskImage);
+  const runBreakdown = useServerFn(breakdownTask);
 
   const { liveMinutes } = useUsageTracking(user.id);
+
 
 
   const loadAll = useCallback(async () => {
