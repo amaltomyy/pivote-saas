@@ -40,7 +40,11 @@ import {
   Target,
   Trash2,
   X,
+  Sparkles,
+  Images,
+  Shield,
 } from "lucide-react";
+
 
 type Phase = {
   id: string;
