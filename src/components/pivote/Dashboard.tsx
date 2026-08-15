@@ -133,11 +133,51 @@ export function Dashboard({ user }: { user: User }) {
     setUsage(u ?? []);
     setActiveId((cur) => cur ?? p?.[0]?.id ?? null);
     setLoading(false);
-  }, []);
+
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("total_focus_minutes, streak_shields")
+      .eq("id", user.id)
+      .maybeSingle();
+    if (profile) {
+      setFocusMinutes(profile.total_focus_minutes ?? 0);
+      setShields(profile.streak_shields ?? 0);
+    }
+  }, [user.id]);
 
   useEffect(() => {
     void loadAll();
   }, [loadAll]);
+
+  // Persist a completed focus session and award a Streak Shield.
+  const handleFocusComplete = useCallback(
+    async (minutes: number) => {
+      const nextMinutes = focusMinutes + minutes;
+      const nextShields = Math.min(3, shields + 1);
+      setFocusMinutes(nextMinutes);
+      setShields(nextShields);
+      const { error } = await supabase.from("profiles").upsert(
+        {
+          id: user.id,
+          total_focus_minutes: nextMinutes,
+          streak_shields: nextShields,
+        },
+        { onConflict: "id" },
+      );
+      if (error) toast.error(error.message);
+      else toast.success(`${minutes}m focus logged — Streak Shield earned`);
+
+      const task = tasks.find((t) => t.id === focusTaskId);
+      if (task && !task.is_completed) {
+        setProofTask(task);
+        setProofFile(null);
+        setProofPreview(null);
+        setProofError(null);
+      }
+    },
+    [focusMinutes, shields, user.id, tasks, focusTaskId],
+  );
+
 
   // Signed thumbnails for proof images
   useEffect(() => {
