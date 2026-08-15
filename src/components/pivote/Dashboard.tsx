@@ -3,11 +3,15 @@ import type { User } from "@supabase/supabase-js";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { verifyTaskImage } from "@/lib/verify-task.functions";
+import { breakdownTask } from "@/lib/breakdown-task.functions";
 import { Logo, Footer } from "./Logo";
 import { ThemeToggle } from "./ThemeToggle";
 import { useUsageTracking } from "./useUsageTracking";
 import { NotificationSettings } from "./NotificationSettings";
+import { FocusTimer } from "./FocusTimer";
+import { ProofGallery, type GalleryItem } from "./ProofGallery";
 import { toast } from "sonner";
+
 
 import {
   Area,
