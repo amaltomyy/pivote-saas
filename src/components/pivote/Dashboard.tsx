@@ -60,7 +60,9 @@ type Task = {
   is_completed: boolean;
   proof_image_url: string | null;
   created_at: string;
+  completed_at: string | null;
 };
+
 
 type UsageLog = { session_date: string; minutes_spent: number | null };
 
