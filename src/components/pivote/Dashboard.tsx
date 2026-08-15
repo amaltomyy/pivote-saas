@@ -3,11 +3,15 @@ import type { User } from "@supabase/supabase-js";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { verifyTaskImage } from "@/lib/verify-task.functions";
+import { breakdownTask } from "@/lib/breakdown-task.functions";
 import { Logo, Footer } from "./Logo";
 import { ThemeToggle } from "./ThemeToggle";
 import { useUsageTracking } from "./useUsageTracking";
 import { NotificationSettings } from "./NotificationSettings";
+import { FocusTimer } from "./FocusTimer";
+import { ProofGallery, type GalleryItem } from "./ProofGallery";
 import { toast } from "sonner";
+
 
 import {
   Area,
@@ -36,7 +40,11 @@ import {
   Target,
   Trash2,
   X,
+  Sparkles,
+  Images,
+  Shield,
 } from "lucide-react";
+
 
 type Phase = {
   id: string;
@@ -52,7 +60,9 @@ type Task = {
   is_completed: boolean;
   proof_image_url: string | null;
   created_at: string;
+  completed_at: string | null;
 };
+
 
 type UsageLog = { session_date: string; minutes_spent: number | null };
 
@@ -87,11 +97,18 @@ export function Dashboard({ user }: { user: User }) {
   const [proofPreview, setProofPreview] = useState<string | null>(null);
   const [proofError, setProofError] = useState<string | null>(null);
   const [verifying, setVerifying] = useState(false);
+  const [galleryOpen, setGalleryOpen] = useState(false);
+  const [breaking, setBreaking] = useState(false);
+  const [focusTaskId, setFocusTaskId] = useState<string | null>(null);
+  const [focusMinutes, setFocusMinutes] = useState(0);
+  const [shields, setShields] = useState(0);
   const fileInputs = useRef<Record<string, HTMLInputElement | null>>({});
   const proofInput = useRef<HTMLInputElement | null>(null);
   const verifyProof = useServerFn(verifyTaskImage);
+  const runBreakdown = useServerFn(breakdownTask);
 
   const { liveMinutes } = useUsageTracking(user.id);
+
 
 
   const loadAll = useCallback(async () => {
@@ -103,7 +120,7 @@ export function Dashboard({ user }: { user: User }) {
           .order("created_at", { ascending: true }),
         supabase
           .from("pivote_tasks")
-          .select("id, phase_id, title, is_completed, proof_image_url, created_at")
+          .select("id, phase_id, title, is_completed, proof_image_url, created_at, completed_at")
           .order("created_at", { ascending: true }),
         supabase
           .from("pivote_usage_logs")
@@ -116,11 +133,51 @@ export function Dashboard({ user }: { user: User }) {
     setUsage(u ?? []);
     setActiveId((cur) => cur ?? p?.[0]?.id ?? null);
     setLoading(false);
-  }, []);
+
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("total_focus_minutes, streak_shields")
+      .eq("id", user.id)
+      .maybeSingle();
+    if (profile) {
+      setFocusMinutes(profile.total_focus_minutes ?? 0);
+      setShields(profile.streak_shields ?? 0);
+    }
+  }, [user.id]);
 
   useEffect(() => {
     void loadAll();
   }, [loadAll]);
+
+  // Persist a completed focus session and award a Streak Shield.
+  const handleFocusComplete = useCallback(
+    async (minutes: number) => {
+      const nextMinutes = focusMinutes + minutes;
+      const nextShields = Math.min(3, shields + 1);
+      setFocusMinutes(nextMinutes);
+      setShields(nextShields);
+      const { error } = await supabase.from("profiles").upsert(
+        {
+          id: user.id,
+          total_focus_minutes: nextMinutes,
+          streak_shields: nextShields,
+        },
+        { onConflict: "id" },
+      );
+      if (error) toast.error(error.message);
+      else toast.success(`${minutes}m focus logged — Streak Shield earned`);
+
+      const task = tasks.find((t) => t.id === focusTaskId);
+      if (task && !task.is_completed) {
+        setProofTask(task);
+        setProofFile(null);
+        setProofPreview(null);
+        setProofError(null);
+      }
+    },
+    [focusMinutes, shields, user.id, tasks, focusTaskId],
+  );
+
 
   // Signed thumbnails for proof images
   useEffect(() => {
@@ -245,7 +302,7 @@ export function Dashboard({ user }: { user: User }) {
     const { data, error } = await supabase
       .from("pivote_tasks")
       .insert({ user_id: user.id, phase_id: activeId, title })
-      .select("id, phase_id, title, is_completed, proof_image_url, created_at")
+      .select("id, phase_id, title, is_completed, proof_image_url, created_at, completed_at")
       .single();
     if (error || !data) {
       toast.error(error?.message ?? "Could not add task");
