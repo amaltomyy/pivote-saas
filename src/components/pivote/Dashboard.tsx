@@ -515,13 +515,29 @@ export function Dashboard({ user }: { user: User }) {
 
   const phaseList = (
     <nav className="flex h-full min-h-0 flex-col">
+      {/* Overall Completion summary */}
+      <div className="mb-3 rounded-2xl border border-glass-border bg-background/60 p-3">
+        <div className="flex items-center justify-between pb-2 text-xs text-muted-foreground">
+          <span className="font-semibold uppercase tracking-[0.12em]">Overall Completion</span>
+          <span className="font-bold text-foreground">{globalPct}%</span>
+        </div>
+        <div className="h-2.5 w-full overflow-hidden rounded-full bg-muted">
+          <div
+            className="h-full rounded-full bg-gradient-to-r from-teal to-teal/60 transition-all duration-500"
+            style={{ width: `${globalPct}%` }}
+          />
+        </div>
+      </div>
+
+      {/* Add New Phase — full-width, prominent, mobile-friendly */}
       <button
         type="button"
         onClick={addPhase}
-        className="flex w-full shrink-0 flex-col items-center justify-center gap-1 whitespace-normal rounded-2xl bg-teal px-4 py-3.5 text-center text-sm font-semibold text-white shadow-lg shadow-teal/20 transition hover:opacity-90 active:scale-[0.99] sm:flex-row sm:gap-2"
+        className="flex w-full shrink-0 items-center justify-center gap-2 rounded-2xl bg-teal px-4 py-4 text-center text-sm font-semibold text-white shadow-lg shadow-teal/20 transition hover:opacity-90 active:scale-[0.99]"
       >
-        <Plus className="h-4 w-4 shrink-0" /> <span>Add New Phase</span>
+        <Plus className="h-5 w-5 shrink-0" /> <span>Add New Phase</span>
       </button>
+
       <p className="px-1 pb-2 pt-5 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
         My phases
       </p>
