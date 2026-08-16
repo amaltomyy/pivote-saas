@@ -243,19 +243,30 @@ export function Dashboard({ user }: { user: User }) {
   })();
   const deltaMinutes = todayMinutes - (usageByDate[yesterdayKey] ?? 0);
 
-  const streak = useMemo(() => {
+  // Streak with gentle recovery: each Streak Shield (earned from a completed
+  // focus session) absorbs one missed day instead of resetting the streak.
+  const { streak, shieldsUsed } = useMemo(() => {
     let count = 0;
+    let used = 0;
     for (let i = 0; i < 365; i++) {
       const d = new Date();
       d.setDate(d.getDate() - i);
       const key = d.toISOString().slice(0, 10);
       const minutes = (usageByDate[key] ?? 0) + (i === 0 ? liveMinutes : 0);
-      if (minutes > 0) count++;
-      else if (i > 0) break;
-      else if (i === 0) continue;
+      if (minutes > 0) {
+        count++;
+        continue;
+      }
+      if (i === 0) continue;
+      if (used < shields) {
+        used++;
+        continue;
+      }
+      break;
     }
-    return count;
-  }, [usageByDate, liveMinutes]);
+    return { streak: count, shieldsUsed: used };
+  }, [usageByDate, liveMinutes, shields]);
+
 
   const donutData = [
     { name: "Completed", value: completedCount },
