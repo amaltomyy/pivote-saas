@@ -633,18 +633,28 @@ export function Dashboard({ user }: { user: User }) {
             </div>
           </div>
 
-          <div className="flex shrink-0 items-center gap-2">
+          <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
+            <button
+              type="button"
+              aria-label="Open Wall of Wins"
+              onClick={() => setGalleryOpen(true)}
+              className="grid h-10 w-10 place-items-center rounded-full border border-glass-border text-foreground transition hover:bg-accent"
+            >
+              <Images className="h-5 w-5" />
+            </button>
             <NotificationSettings userId={user.id} />
             <ThemeToggle />
             <button
               type="button"
               onClick={signOut}
-              className="flex h-10 items-center gap-2 rounded-full border border-glass-border px-3 text-sm font-medium text-foreground transition hover:bg-accent"
+              aria-label="Sign out"
+              className="flex h-10 items-center gap-2 rounded-full border border-glass-border px-2.5 text-sm font-medium text-foreground transition hover:bg-accent sm:px-3"
             >
               <LogOut className="h-4 w-4" />
               <span className="hidden sm:inline">Sign out</span>
             </button>
           </div>
+
         </div>
       </header>
 
