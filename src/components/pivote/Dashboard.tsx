@@ -370,12 +370,15 @@ export function Dashboard({ user }: { user: User }) {
       return;
     }
     setTasks((prev) =>
-      prev.map((t) => (t.id === task.id ? { ...t, is_completed: false } : t)),
+      prev.map((t) =>
+        t.id === task.id ? { ...t, is_completed: false, completed_at: null } : t,
+      ),
     );
     const { error } = await supabase
       .from("pivote_tasks")
-      .update({ is_completed: false })
+      .update({ is_completed: false, completed_at: null })
       .eq("id", task.id);
+
     if (error) {
       setTasks((prev) =>
         prev.map((t) => (t.id === task.id ? { ...t, is_completed: true } : t)),
