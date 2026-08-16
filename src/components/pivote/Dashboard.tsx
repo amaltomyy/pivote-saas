@@ -1186,7 +1186,19 @@ export function Dashboard({ user }: { user: User }) {
         </div>
       )}
 
+      {galleryOpen && (
+        <ProofGallery
+          items={galleryItems}
+          onClose={() => setGalleryOpen(false)}
+          onOpen={(item) => {
+            const task = tasks.find((t) => t.id === item.id);
+            if (task) void openProof(task);
+          }}
+        />
+      )}
+
       {viewer && (
+
 
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <button
