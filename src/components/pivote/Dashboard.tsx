@@ -243,21 +243,47 @@ export function Dashboard({ user }: { user: User }) {
   })();
   const deltaMinutes = todayMinutes - (usageByDate[yesterdayKey] ?? 0);
 
-  const streak = useMemo(() => {
+  // Streak with gentle recovery: each Streak Shield (earned from a completed
+  // focus session) absorbs one missed day instead of resetting the streak.
+  const { streak, shieldsUsed } = useMemo(() => {
     let count = 0;
+    let used = 0;
     for (let i = 0; i < 365; i++) {
       const d = new Date();
       d.setDate(d.getDate() - i);
       const key = d.toISOString().slice(0, 10);
       const minutes = (usageByDate[key] ?? 0) + (i === 0 ? liveMinutes : 0);
-      if (minutes > 0) count++;
-      else if (i > 0) break;
-      else if (i === 0) continue;
+      if (minutes > 0) {
+        count++;
+        continue;
+      }
+      if (i === 0) continue;
+      if (used < shields) {
+        used++;
+        continue;
+      }
+      break;
     }
-    return count;
-  }, [usageByDate, liveMinutes]);
+    return { streak: count, shieldsUsed: used };
+  }, [usageByDate, liveMinutes, shields]);
+
+
+  const galleryItems: GalleryItem[] = useMemo(
+    () =>
+      tasks
+        .filter((t) => t.is_completed && t.proof_image_url)
+        .map((t) => ({
+          id: t.id,
+          title: t.title,
+          path: t.proof_image_url!,
+          url: thumbs[t.proof_image_url!],
+          date: t.completed_at ?? t.created_at,
+        })),
+    [tasks, thumbs],
+  );
 
   const donutData = [
+
     { name: "Completed", value: completedCount },
     { name: "Pending", value: Math.max(tasks.length - completedCount, 0) },
   ];
@@ -311,6 +337,44 @@ export function Dashboard({ user }: { user: User }) {
     setTasks((prev) => [...prev, data]);
   }
 
+  // AI micro-task breakdown: turn a vague goal into 3-4 verifiable sub-tasks.
+  async function breakDownGoal() {
+    const goal = newTask.trim();
+    if (!goal || !activeId || breaking) return;
+    setBreaking(true);
+    try {
+      const result = await runBreakdown({ data: { goal } });
+      if (result.error || result.steps.length === 0) {
+        toast.error(result.error ?? "Could not break down this goal");
+        return;
+      }
+      const { data, error } = await supabase
+        .from("pivote_tasks")
+        .insert(
+          result.steps.map((title) => ({
+            user_id: user.id,
+            phase_id: activeId,
+            title,
+          })),
+        )
+        .select(
+          "id, phase_id, title, is_completed, proof_image_url, created_at, completed_at",
+        );
+      if (error || !data) {
+        toast.error(error?.message ?? "Could not save sub-tasks");
+        return;
+      }
+      setTasks((prev) => [...prev, ...data]);
+      setNewTask("");
+      toast.success(`Added ${data.length} AI sub-tasks`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "AI breakdown failed");
+    } finally {
+      setBreaking(false);
+    }
+  }
+
+
   async function toggleTask(task: Task) {
     if (!task.is_completed) {
       // Completion requires AI-verified proof of work.
@@ -321,12 +385,15 @@ export function Dashboard({ user }: { user: User }) {
       return;
     }
     setTasks((prev) =>
-      prev.map((t) => (t.id === task.id ? { ...t, is_completed: false } : t)),
+      prev.map((t) =>
+        t.id === task.id ? { ...t, is_completed: false, completed_at: null } : t,
+      ),
     );
     const { error } = await supabase
       .from("pivote_tasks")
-      .update({ is_completed: false })
+      .update({ is_completed: false, completed_at: null })
       .eq("id", task.id);
+
     if (error) {
       setTasks((prev) =>
         prev.map((t) => (t.id === task.id ? { ...t, is_completed: true } : t)),
@@ -356,6 +423,7 @@ export function Dashboard({ user }: { user: User }) {
         return;
       }
 
+      const now = new Date().toISOString();
       const ext = file.name.split(".").pop() ?? "jpg";
       const path = `${user.id}/${task.id}-${Date.now()}.${ext}`;
       const { error: upErr } = await supabase.storage
@@ -364,13 +432,15 @@ export function Dashboard({ user }: { user: User }) {
       if (upErr) throw upErr;
       const { error } = await supabase
         .from("pivote_tasks")
-        .update({ is_completed: true, proof_image_url: path })
+        .update({ is_completed: true, proof_image_url: path, completed_at: now })
         .eq("id", task.id);
       if (error) throw error;
 
       setTasks((prev) =>
         prev.map((t) =>
-          t.id === task.id ? { ...t, is_completed: true, proof_image_url: path } : t,
+          t.id === task.id
+            ? { ...t, is_completed: true, proof_image_url: path, completed_at: now }
+            : t,
         ),
       );
       toast.success(`Verified — ${result.reason}`);
@@ -563,18 +633,28 @@ export function Dashboard({ user }: { user: User }) {
             </div>
           </div>
 
-          <div className="flex shrink-0 items-center gap-2">
+          <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
+            <button
+              type="button"
+              aria-label="Open Wall of Wins"
+              onClick={() => setGalleryOpen(true)}
+              className="grid h-10 w-10 place-items-center rounded-full border border-glass-border text-foreground transition hover:bg-accent"
+            >
+              <Images className="h-5 w-5" />
+            </button>
             <NotificationSettings userId={user.id} />
             <ThemeToggle />
             <button
               type="button"
               onClick={signOut}
-              className="flex h-10 items-center gap-2 rounded-full border border-glass-border px-3 text-sm font-medium text-foreground transition hover:bg-accent"
+              aria-label="Sign out"
+              className="flex h-10 items-center gap-2 rounded-full border border-glass-border px-2.5 text-sm font-medium text-foreground transition hover:bg-accent sm:px-3"
             >
               <LogOut className="h-4 w-4" />
               <span className="hidden sm:inline">Sign out</span>
             </button>
           </div>
+
         </div>
       </header>
 
@@ -684,6 +764,20 @@ export function Dashboard({ user }: { user: User }) {
                     className="min-w-0 flex-1 bg-transparent py-2 text-base text-foreground outline-none placeholder:text-muted-foreground"
                   />
                   <button
+                    type="button"
+                    aria-label="Break this goal into sub-tasks with AI"
+                    title="AI micro-task breakdown"
+                    disabled={!newTask.trim() || breaking}
+                    onClick={() => void breakDownGoal()}
+                    className="grid h-10 w-10 shrink-0 place-items-center rounded-full border border-glass-border text-teal transition hover:bg-teal/10 disabled:opacity-40"
+                  >
+                    {breaking ? (
+                      <Loader2 className="h-5 w-5 animate-spin" />
+                    ) : (
+                      <Sparkles className="h-5 w-5" />
+                    )}
+                  </button>
+                  <button
                     type="submit"
                     aria-label="Add task"
                     className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-teal text-white transition hover:opacity-90 active:scale-95"
@@ -691,6 +785,7 @@ export function Dashboard({ user }: { user: User }) {
                     <Plus className="h-5 w-5" />
                   </button>
                 </form>
+
 
                 <div className="mt-5 hidden grid-cols-[minmax(0,1fr)_5rem_4.5rem_2rem] gap-3 px-2 pb-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground sm:grid">
                   <span>Task</span>
@@ -727,15 +822,21 @@ export function Dashboard({ user }: { user: User }) {
                             <Check className="h-3.5 w-3.5 text-white" />
                           )}
                         </button>
-                        <span
-                          className={`min-w-0 flex-1 break-words text-sm ${
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setFocusTaskId((cur) => (cur === task.id ? null : task.id))
+                          }
+                          title="Select as focus task"
+                          className={`min-w-0 flex-1 break-words rounded-lg px-1.5 py-1 text-left text-sm transition ${
                             task.is_completed
                               ? "text-muted-foreground line-through"
                               : "text-foreground"
-                          }`}
+                          } ${focusTaskId === task.id ? "bg-teal/10 ring-1 ring-teal/40" : ""}`}
                         >
                           {task.title}
-                        </span>
+                        </button>
+
                       </div>
 
                       <div className="flex items-center justify-center gap-2">
@@ -816,6 +917,11 @@ export function Dashboard({ user }: { user: User }) {
 
           {/* Right: analytics */}
           <aside className="space-y-4 xl:sticky xl:top-32 xl:self-start">
+            <FocusTimer
+              taskLabel={tasks.find((t) => t.id === focusTaskId)?.title ?? null}
+              onFocusComplete={(m) => void handleFocusComplete(m)}
+            />
+
             <section className="panel-card p-4">
               <h2 className="text-sm font-bold text-foreground">Time Spent Today</h2>
               <p className="mt-2 text-3xl font-black text-foreground">
@@ -926,19 +1032,45 @@ export function Dashboard({ user }: { user: User }) {
               </div>
             </section>
 
-            <section className="panel-card flex items-center gap-3 p-4">
-              <Flame className="h-8 w-8 shrink-0 text-teal" />
-              <div className="min-w-0">
-                <p className="text-xs font-semibold text-teal">Current Streak</p>
-                <p className="text-2xl font-black text-foreground">
-                  {streak} {streak === 1 ? "Day" : "Days"}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  Keep it up! You&apos;re doing great.
-                </p>
+            <section className="panel-card p-4">
+              <div className="flex items-center gap-3">
+                <Flame className="h-8 w-8 shrink-0 text-teal" />
+                <div className="min-w-0">
+                  <p className="text-xs font-semibold text-teal">Current Streak</p>
+                  <p className="text-2xl font-black text-foreground">
+                    {streak} {streak === 1 ? "Day" : "Days"}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {shieldsUsed > 0
+                      ? `${shieldsUsed} shield${shieldsUsed === 1 ? "" : "s"} protected your streak.`
+                      : "Keep it up! You're doing great."}
+                  </p>
+                </div>
               </div>
+              <div className="mt-3 flex items-center justify-between gap-2 rounded-2xl bg-muted/40 px-3 py-2">
+                <span className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <Shield className="h-4 w-4 text-teal" /> Streak Shields
+                </span>
+                <span className="flex items-center gap-1">
+                  {[0, 1, 2].map((i) => (
+                    <Shield
+                      key={i}
+                      className={`h-4 w-4 ${
+                        i < shields ? "text-teal" : "text-muted-foreground/30"
+                      }`}
+                      fill={i < shields ? "currentColor" : "none"}
+                    />
+                  ))}
+                </span>
+              </div>
+              <p className="mt-2 text-[11px] text-muted-foreground">
+                Finish a focus session to earn a shield (max 3). Each shield forgives one
+                missed day. Total focus: {Math.floor(focusMinutes / 60)}h{" "}
+                {focusMinutes % 60}m.
+              </p>
             </section>
           </aside>
+
         </div>
 
         <div className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -1054,7 +1186,19 @@ export function Dashboard({ user }: { user: User }) {
         </div>
       )}
 
+      {galleryOpen && (
+        <ProofGallery
+          items={galleryItems}
+          onClose={() => setGalleryOpen(false)}
+          onOpen={(item) => {
+            const task = tasks.find((t) => t.id === item.id);
+            if (task) void openProof(task);
+          }}
+        />
+      )}
+
       {viewer && (
+
 
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <button

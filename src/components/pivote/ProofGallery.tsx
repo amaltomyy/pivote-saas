@@ -5,7 +5,7 @@ export type GalleryItem = {
   id: string;
   title: string;
   path: string;
-  url?: string;
+  url?: string | undefined;
   date: string;
 };
 
