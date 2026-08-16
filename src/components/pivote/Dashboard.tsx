@@ -268,7 +268,22 @@ export function Dashboard({ user }: { user: User }) {
   }, [usageByDate, liveMinutes, shields]);
 
 
+  const galleryItems: GalleryItem[] = useMemo(
+    () =>
+      tasks
+        .filter((t) => t.is_completed && t.proof_image_url)
+        .map((t) => ({
+          id: t.id,
+          title: t.title,
+          path: t.proof_image_url!,
+          url: thumbs[t.proof_image_url!],
+          date: t.completed_at ?? t.created_at,
+        })),
+    [tasks, thumbs],
+  );
+
   const donutData = [
+
     { name: "Completed", value: completedCount },
     { name: "Pending", value: Math.max(tasks.length - completedCount, 0) },
   ];
