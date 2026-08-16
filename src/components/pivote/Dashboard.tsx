@@ -322,6 +322,44 @@ export function Dashboard({ user }: { user: User }) {
     setTasks((prev) => [...prev, data]);
   }
 
+  // AI micro-task breakdown: turn a vague goal into 3-4 verifiable sub-tasks.
+  async function breakDownGoal() {
+    const goal = newTask.trim();
+    if (!goal || !activeId || breaking) return;
+    setBreaking(true);
+    try {
+      const result = await runBreakdown({ data: { goal } });
+      if (result.error || result.steps.length === 0) {
+        toast.error(result.error ?? "Could not break down this goal");
+        return;
+      }
+      const { data, error } = await supabase
+        .from("pivote_tasks")
+        .insert(
+          result.steps.map((title) => ({
+            user_id: user.id,
+            phase_id: activeId,
+            title,
+          })),
+        )
+        .select(
+          "id, phase_id, title, is_completed, proof_image_url, created_at, completed_at",
+        );
+      if (error || !data) {
+        toast.error(error?.message ?? "Could not save sub-tasks");
+        return;
+      }
+      setTasks((prev) => [...prev, ...data]);
+      setNewTask("");
+      toast.success(`Added ${data.length} AI sub-tasks`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "AI breakdown failed");
+    } finally {
+      setBreaking(false);
+    }
+  }
+
+
   async function toggleTask(task: Task) {
     if (!task.is_completed) {
       // Completion requires AI-verified proof of work.
