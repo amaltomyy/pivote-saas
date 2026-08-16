@@ -1032,19 +1032,45 @@ export function Dashboard({ user }: { user: User }) {
               </div>
             </section>
 
-            <section className="panel-card flex items-center gap-3 p-4">
-              <Flame className="h-8 w-8 shrink-0 text-teal" />
-              <div className="min-w-0">
-                <p className="text-xs font-semibold text-teal">Current Streak</p>
-                <p className="text-2xl font-black text-foreground">
-                  {streak} {streak === 1 ? "Day" : "Days"}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  Keep it up! You&apos;re doing great.
-                </p>
+            <section className="panel-card p-4">
+              <div className="flex items-center gap-3">
+                <Flame className="h-8 w-8 shrink-0 text-teal" />
+                <div className="min-w-0">
+                  <p className="text-xs font-semibold text-teal">Current Streak</p>
+                  <p className="text-2xl font-black text-foreground">
+                    {streak} {streak === 1 ? "Day" : "Days"}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {shieldsUsed > 0
+                      ? `${shieldsUsed} shield${shieldsUsed === 1 ? "" : "s"} protected your streak.`
+                      : "Keep it up! You're doing great."}
+                  </p>
+                </div>
               </div>
+              <div className="mt-3 flex items-center justify-between gap-2 rounded-2xl bg-muted/40 px-3 py-2">
+                <span className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <Shield className="h-4 w-4 text-teal" /> Streak Shields
+                </span>
+                <span className="flex items-center gap-1">
+                  {[0, 1, 2].map((i) => (
+                    <Shield
+                      key={i}
+                      className={`h-4 w-4 ${
+                        i < shields ? "text-teal" : "text-muted-foreground/30"
+                      }`}
+                      fill={i < shields ? "currentColor" : "none"}
+                    />
+                  ))}
+                </span>
+              </div>
+              <p className="mt-2 text-[11px] text-muted-foreground">
+                Finish a focus session to earn a shield (max 3). Each shield forgives one
+                missed day. Total focus: {Math.floor(focusMinutes / 60)}h{" "}
+                {focusMinutes % 60}m.
+              </p>
             </section>
           </aside>
+
         </div>
 
         <div className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
