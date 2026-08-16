@@ -822,15 +822,21 @@ export function Dashboard({ user }: { user: User }) {
                             <Check className="h-3.5 w-3.5 text-white" />
                           )}
                         </button>
-                        <span
-                          className={`min-w-0 flex-1 break-words text-sm ${
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setFocusTaskId((cur) => (cur === task.id ? null : task.id))
+                          }
+                          title="Select as focus task"
+                          className={`min-w-0 flex-1 break-words rounded-lg px-1.5 py-1 text-left text-sm transition ${
                             task.is_completed
                               ? "text-muted-foreground line-through"
                               : "text-foreground"
-                          }`}
+                          } ${focusTaskId === task.id ? "bg-teal/10 ring-1 ring-teal/40" : ""}`}
                         >
                           {task.title}
-                        </span>
+                        </button>
+
                       </div>
 
                       <div className="flex items-center justify-center gap-2">
