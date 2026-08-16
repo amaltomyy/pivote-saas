@@ -764,6 +764,20 @@ export function Dashboard({ user }: { user: User }) {
                     className="min-w-0 flex-1 bg-transparent py-2 text-base text-foreground outline-none placeholder:text-muted-foreground"
                   />
                   <button
+                    type="button"
+                    aria-label="Break this goal into sub-tasks with AI"
+                    title="AI micro-task breakdown"
+                    disabled={!newTask.trim() || breaking}
+                    onClick={() => void breakDownGoal()}
+                    className="grid h-10 w-10 shrink-0 place-items-center rounded-full border border-glass-border text-teal transition hover:bg-teal/10 disabled:opacity-40"
+                  >
+                    {breaking ? (
+                      <Loader2 className="h-5 w-5 animate-spin" />
+                    ) : (
+                      <Sparkles className="h-5 w-5" />
+                    )}
+                  </button>
+                  <button
                     type="submit"
                     aria-label="Add task"
                     className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-teal text-white transition hover:opacity-90 active:scale-95"
@@ -771,6 +785,7 @@ export function Dashboard({ user }: { user: User }) {
                     <Plus className="h-5 w-5" />
                   </button>
                 </form>
+
 
                 <div className="mt-5 hidden grid-cols-[minmax(0,1fr)_5rem_4.5rem_2rem] gap-3 px-2 pb-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground sm:grid">
                   <span>Task</span>
