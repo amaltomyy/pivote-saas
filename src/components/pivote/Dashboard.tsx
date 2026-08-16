@@ -405,6 +405,7 @@ export function Dashboard({ user }: { user: User }) {
         return;
       }
 
+      const now = new Date().toISOString();
       const ext = file.name.split(".").pop() ?? "jpg";
       const path = `${user.id}/${task.id}-${Date.now()}.${ext}`;
       const { error: upErr } = await supabase.storage
@@ -413,13 +414,15 @@ export function Dashboard({ user }: { user: User }) {
       if (upErr) throw upErr;
       const { error } = await supabase
         .from("pivote_tasks")
-        .update({ is_completed: true, proof_image_url: path })
+        .update({ is_completed: true, proof_image_url: path, completed_at: now })
         .eq("id", task.id);
       if (error) throw error;
 
       setTasks((prev) =>
         prev.map((t) =>
-          t.id === task.id ? { ...t, is_completed: true, proof_image_url: path } : t,
+          t.id === task.id
+            ? { ...t, is_completed: true, proof_image_url: path, completed_at: now }
+            : t,
         ),
       );
       toast.success(`Verified — ${result.reason}`);
