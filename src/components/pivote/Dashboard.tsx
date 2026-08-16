@@ -917,6 +917,11 @@ export function Dashboard({ user }: { user: User }) {
 
           {/* Right: analytics */}
           <aside className="space-y-4 xl:sticky xl:top-32 xl:self-start">
+            <FocusTimer
+              taskLabel={tasks.find((t) => t.id === focusTaskId)?.title ?? null}
+              onFocusComplete={(m) => void handleFocusComplete(m)}
+            />
+
             <section className="panel-card p-4">
               <h2 className="text-sm font-bold text-foreground">Time Spent Today</h2>
               <p className="mt-2 text-3xl font-black text-foreground">
